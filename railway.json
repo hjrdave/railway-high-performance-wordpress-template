@@ -13,14 +13,12 @@
         "WORDPRESS_TABLE_PREFIX": "wp_",
         "WORDPRESS_CONFIG_EXTRA": "define('WP_REDIS_HOST', '${{Redis.RAILWAY_PRIVATE_DOMAIN}}'); define('WP_REDIS_PORT', 6379); define('WP_CACHE', true); define('WP_MEMORY_LIMIT', '512M'); ini_set('upload_max_filesize', '256M'); ini_set('post_max_size', '256M'); ini_set('max_execution_time', 300); ini_set('max_input_time', 300); ini_set('memory_limit', '512M');"
       },
-      "domains": [
+      "volumes": [
         {
-          "name": "${{RAILWAY_STATIC_URL}}"
+          "name": "wordpress_data",
+          "mountPath": "/var/www/html"
         }
-      ],
-      "healthcheckPath": "/wp-admin/install.php",
-      "restartPolicyType": "ON_FAILURE",
-      "restartPolicyMaxRetries": 10
+      ]
     },
     "mysql": {
       "source": {
@@ -39,11 +37,7 @@
           "name": "mysql_data",
           "mountPath": "/var/lib/mysql"
         }
-      ],
-      "healthcheckPath": "/",
-      "healthcheckTimeout": 30,
-      "restartPolicyType": "ON_FAILURE",
-      "restartPolicyMaxRetries": 10
+      ]
     },
     "phpmyadmin": {
       "source": {
@@ -57,15 +51,7 @@
         "MYSQL_ROOT_PASSWORD": "${{shared.MYSQL_ROOT_PASSWORD}}",
         "PMA_ARBITRARY": "1",
         "UPLOAD_LIMIT": "256M"
-      },
-      "domains": [
-        {
-          "name": "${{RAILWAY_STATIC_URL}}"
-        }
-      ],
-      "healthcheckPath": "/",
-      "restartPolicyType": "ON_FAILURE",
-      "restartPolicyMaxRetries": 10
+      }
     },
     "redis": {
       "source": {
@@ -80,37 +66,16 @@
           "name": "redis_data",
           "mountPath": "/data"
         }
-      ],
-      "healthcheckPath": "/",
-      "restartPolicyType": "ON_FAILURE",
-      "restartPolicyMaxRetries": 10
+      ]
     }
   },
-  "environments": {
-    "production": {
-      "variables": {
-        "RAILWAY_ENVIRONMENT_NAME": "production"
-      }
-    }
-  },
-  "volumes": [
-    {
-      "name": "mysql_data"
-    },
-    {
-      "name": "redis_data"
-    },
-    {
-      "name": "wordpress_data"
-    }
-  ],
   "variables": {
     "MYSQL_ROOT_PASSWORD": {
       "description": "Root password for MySQL database",
       "default": "${{secret(32)}}"
     },
     "MYSQL_PASSWORD": {
-      "description": "Password for WordPress MySQL user",
+      "description": "Password for WordPress MySQL user", 
       "default": "${{secret(24)}}"
     },
     "REDIS_PASSWORD": {
