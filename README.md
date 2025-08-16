@@ -4,7 +4,34 @@ This repo deploys **WordPress** on Railway, connected to **Railway’s Managed M
 
 ---
 
-## 🚀 Setup Steps
+# 🚀 WordPress + Managed MySQL + phpMyAdmin on Railway
+
+This project deploys a **WordPress stack** with:
+- WordPress (latest, with custom PHP upload limits)
+- Railway Managed MySQL
+- phpMyAdmin (optional)
+
+---
+
+## One-Click Deploy
+
+1. Push this repo to GitHub.
+2. On Railway → **New Project → Deploy from Repo** → select your repo.
+3. Railway will:
+   - Provision a MySQL plugin
+   - Build the WordPress Dockerfile (with `php.ini`)
+   - Spin up phpMyAdmin linked to the same DB
+
+---
+
+## URLs
+
+- WordPress: available at your Railway service URL
+- phpMyAdmin: available at its own Railway service URL
+- Both use the same managed MySQL database
+
+
+## 🚀 Manual Setup Steps
 
 ### 1. Add Managed MySQL
 1. In your Railway project → click **New → Add Plugin → MySQL**.
