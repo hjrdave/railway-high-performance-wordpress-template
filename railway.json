@@ -1,95 +1,124 @@
 {
-  "services": [
-    {
-      "name": "wordpress",
+  "$schema": "https://railway.app/railway.schema.json",
+  "build": {
+    "builder": "DOCKERFILE"
+  },
+  "services": {
+    "wordpress": {
       "source": {
-        "image": "wordpress:latest"
+        "image": "wordpress:6-php8.2-apache"
       },
-      "ports": [
-        {
-          "port": 80,
-          "external": true
-        }
-      ],
-      "environment": {
-        "WORDPRESS_DB_HOST": "${{mysql.MYSQLHOST}}",
-        "WORDPRESS_DB_USER": "${{mysql.MYSQLUSER}}",
-        "WORDPRESS_DB_PASSWORD": "${{mysql.MYSQLPASSWORD}}",
-        "WORDPRESS_DB_NAME": "${{mysql.MYSQLDATABASE}}"
+      "variables": {
+        "WORDPRESS_DB_HOST": "${{MySQL.RAILWAY_PRIVATE_DOMAIN}}:3306",
+        "WORDPRESS_DB_USER": "wordpress",
+        "WORDPRESS_DB_PASSWORD": "${{MySQL.MYSQL_PASSWORD}}",
+        "WORDPRESS_DB_NAME": "wordpress",
+        "WORDPRESS_TABLE_PREFIX": "wp_",
+        "WORDPRESS_CONFIG_EXTRA": "define('WP_REDIS_HOST', '${{Redis.RAILWAY_PRIVATE_DOMAIN}}'); define('WP_REDIS_PORT', 6379); define('WP_CACHE', true); define('WP_MEMORY_LIMIT', '512M'); ini_set('upload_max_filesize', '256M'); ini_set('post_max_size', '256M'); ini_set('max_execution_time', 300); ini_set('max_input_time', 300); ini_set('memory_limit', '512M');"
       },
-      "volumes": [
+      "domains": [
         {
-          "name": "wordpress-data",
-          "path": "/var/www/html"
-        },
-        {
-          "name": "php-ini",
-          "path": "/usr/local/etc/php/conf.d/custom.ini"
+          "name": "${{RAILWAY_STATIC_URL}}"
         }
       ],
-      "configFiles": [
-        {
-          "path": "/usr/local/etc/php/conf.d/custom.ini",
-          "content": "upload_max_filesize = 256M\npost_max_size = 256M\nmemory_limit = 512M\nmax_execution_time = 300\nmax_input_time = 300"
-        }
-      ],
-      "healthcheck": {
-        "path": "/wp-admin/install.php",
-        "timeout": 10,
-        "interval": 30
-      }
+      "healthcheckPath": "/wp-admin/install.php",
+      "restartPolicyType": "ON_FAILURE",
+      "restartPolicyMaxRetries": 10
     },
-    {
-      "name": "mysql",
+    "mysql": {
       "source": {
         "image": "mysql:8.0"
       },
-      "environment": {
-        "MYSQL_ROOT_PASSWORD": "${{random(32)}}",
+      "variables": {
+        "MYSQL_ROOT_PASSWORD": "${{shared.MYSQL_ROOT_PASSWORD}}",
         "MYSQL_DATABASE": "wordpress",
-        "MYSQL_USER": "wordpress_user",
-        "MYSQL_PASSWORD": "${{random(32)}}"
+        "MYSQL_USER": "wordpress",
+        "MYSQL_PASSWORD": "${{shared.MYSQL_PASSWORD}}",
+        "MYSQL_CHARSET": "utf8mb4",
+        "MYSQL_COLLATION": "utf8mb4_unicode_ci"
       },
       "volumes": [
         {
-          "name": "mysql-data",
-          "path": "/var/lib/mysql"
+          "name": "mysql_data",
+          "mountPath": "/var/lib/mysql"
         }
       ],
-      "healthcheck": {
-        "command": "mysqladmin ping -h 127.0.0.1 -u $$MYSQL_USER --password=$$MYSQL_PASSWORD",
-        "timeout": 10,
-        "interval": 30
-      }
+      "healthcheckPath": "/",
+      "healthcheckTimeout": 30,
+      "restartPolicyType": "ON_FAILURE",
+      "restartPolicyMaxRetries": 10
     },
-    {
-      "name": "phpmyadmin",
+    "phpmyadmin": {
       "source": {
-        "image": "phpmyadmin:latest"
+        "image": "phpmyadmin:5-apache"
       },
-      "ports": [
-        {
-          "port": 80,
-          "external": true
-        }
-      ],
-      "environment": {
-        "PMA_HOST": "${{mysql.MYSQLHOST}}",
-        "PMA_USER": "${{mysql.MYSQLUSER}}",
-        "PMA_PASSWORD": "${{mysql.MYSQLPASSWORD}}",
+      "variables": {
+        "PMA_HOST": "${{MySQL.RAILWAY_PRIVATE_DOMAIN}}",
+        "PMA_PORT": "3306",
+        "PMA_USER": "wordpress",
+        "PMA_PASSWORD": "${{MySQL.MYSQL_PASSWORD}}",
+        "MYSQL_ROOT_PASSWORD": "${{shared.MYSQL_ROOT_PASSWORD}}",
+        "PMA_ARBITRARY": "1",
         "UPLOAD_LIMIT": "256M"
       },
-      "healthcheck": {
-        "path": "/index.php",
-        "timeout": 10,
-        "interval": 30
+      "domains": [
+        {
+          "name": "${{RAILWAY_STATIC_URL}}"
+        }
+      ],
+      "healthcheckPath": "/",
+      "restartPolicyType": "ON_FAILURE",
+      "restartPolicyMaxRetries": 10
+    },
+    "redis": {
+      "source": {
+        "image": "redis:7-alpine"
+      },
+      "variables": {
+        "REDIS_PASSWORD": "${{shared.REDIS_PASSWORD}}"
+      },
+      "startCommand": "redis-server --requirepass $REDIS_PASSWORD --maxmemory 256mb --maxmemory-policy allkeys-lru",
+      "volumes": [
+        {
+          "name": "redis_data",
+          "mountPath": "/data"
+        }
+      ],
+      "healthcheckPath": "/",
+      "restartPolicyType": "ON_FAILURE",
+      "restartPolicyMaxRetries": 10
+    }
+  },
+  "environments": {
+    "production": {
+      "variables": {
+        "RAILWAY_ENVIRONMENT_NAME": "production"
       }
+    }
+  },
+  "volumes": [
+    {
+      "name": "mysql_data"
+    },
+    {
+      "name": "redis_data"
+    },
+    {
+      "name": "wordpress_data"
     }
   ],
   "variables": {
-    "mysql.MYSQLHOST": "${{mysql.RAILWAY_PRIVATE_DOMAIN}}",
-    "mysql.MYSQLUSER": "wordpress_user",
-    "mysql.MYSQLPASSWORD": "${{mysql.MYSQL_PASSWORD}}",
-    "mysql.MYSQLDATABASE": "wordpress"
+    "MYSQL_ROOT_PASSWORD": {
+      "description": "Root password for MySQL database",
+      "default": "${{secret(32)}}"
+    },
+    "MYSQL_PASSWORD": {
+      "description": "Password for WordPress MySQL user",
+      "default": "${{secret(24)}}"
+    },
+    "REDIS_PASSWORD": {
+      "description": "Password for Redis cache",
+      "default": "${{secret(16)}}"
+    }
   }
 }
