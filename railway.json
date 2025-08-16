@@ -1,32 +1,95 @@
 {
-  "name": "wordpress-stack",
-  "plugins": [
-    {
-      "name": "mysql"
-    }
-  ],
   "services": [
     {
       "name": "wordpress",
       "source": {
-        "path": "."
+        "image": "wordpress:latest"
       },
-      "envs": {
-        "WORDPRESS_DB_HOST": "${{ MYSQLHOST }}:${{ MYSQLPORT }}",
-        "WORDPRESS_DB_USER": "${{ MYSQLUSER }}",
-        "WORDPRESS_DB_PASSWORD": "${{ MYSQLPASSWORD }}",
-        "WORDPRESS_DB_NAME": "${{ MYSQLDATABASE }}"
+      "ports": [
+        {
+          "port": 80,
+          "external": true
+        }
+      ],
+      "environment": {
+        "WORDPRESS_DB_HOST": "${{mysql.MYSQLHOST}}",
+        "WORDPRESS_DB_USER": "${{mysql.MYSQLUSER}}",
+        "WORDPRESS_DB_PASSWORD": "${{mysql.MYSQLPASSWORD}}",
+        "WORDPRESS_DB_NAME": "${{mysql.MYSQLDATABASE}}"
+      },
+      "volumes": [
+        {
+          "name": "wordpress-data",
+          "path": "/var/www/html"
+        },
+        {
+          "name": "php-ini",
+          "path": "/usr/local/etc/php/conf.d/custom.ini"
+        }
+      ],
+      "configFiles": [
+        {
+          "path": "/usr/local/etc/php/conf.d/custom.ini",
+          "content": "upload_max_filesize = 256M\npost_max_size = 256M\nmemory_limit = 512M\nmax_execution_time = 300\nmax_input_time = 300"
+        }
+      ],
+      "healthcheck": {
+        "path": "/wp-admin/install.php",
+        "timeout": 10,
+        "interval": 30
+      }
+    },
+    {
+      "name": "mysql",
+      "source": {
+        "image": "mysql:8.0"
+      },
+      "environment": {
+        "MYSQL_ROOT_PASSWORD": "${{random(32)}}",
+        "MYSQL_DATABASE": "wordpress",
+        "MYSQL_USER": "wordpress_user",
+        "MYSQL_PASSWORD": "${{random(32)}}"
+      },
+      "volumes": [
+        {
+          "name": "mysql-data",
+          "path": "/var/lib/mysql"
+        }
+      ],
+      "healthcheck": {
+        "command": "mysqladmin ping -h 127.0.0.1 -u $$MYSQL_USER --password=$$MYSQL_PASSWORD",
+        "timeout": 10,
+        "interval": 30
       }
     },
     {
       "name": "phpmyadmin",
-      "image": "phpmyadmin/phpmyadmin:latest",
-      "envs": {
-        "PMA_HOST": "${{ MYSQLHOST }}",
-        "PMA_PORT": "${{ MYSQLPORT }}",
-        "PMA_USER": "${{ MYSQLUSER }}",
-        "PMA_PASSWORD": "${{ MYSQLPASSWORD }}"
+      "source": {
+        "image": "phpmyadmin:latest"
+      },
+      "ports": [
+        {
+          "port": 80,
+          "external": true
+        }
+      ],
+      "environment": {
+        "PMA_HOST": "${{mysql.MYSQLHOST}}",
+        "PMA_USER": "${{mysql.MYSQLUSER}}",
+        "PMA_PASSWORD": "${{mysql.MYSQLPASSWORD}}",
+        "UPLOAD_LIMIT": "256M"
+      },
+      "healthcheck": {
+        "path": "/index.php",
+        "timeout": 10,
+        "interval": 30
       }
     }
-  ]
+  ],
+  "variables": {
+    "mysql.MYSQLHOST": "${{mysql.RAILWAY_PRIVATE_DOMAIN}}",
+    "mysql.MYSQLUSER": "wordpress_user",
+    "mysql.MYSQLPASSWORD": "${{mysql.MYSQL_PASSWORD}}",
+    "mysql.MYSQLDATABASE": "wordpress"
+  }
 }
