@@ -1,0 +1,32 @@
+{
+  "name": "wordpress-stack",
+  "plugins": [
+    {
+      "name": "mysql"
+    }
+  ],
+  "services": [
+    {
+      "name": "wordpress",
+      "source": {
+        "path": "."
+      },
+      "envs": {
+        "WORDPRESS_DB_HOST": "${{ MYSQLHOST }}:${{ MYSQLPORT }}",
+        "WORDPRESS_DB_USER": "${{ MYSQLUSER }}",
+        "WORDPRESS_DB_PASSWORD": "${{ MYSQLPASSWORD }}",
+        "WORDPRESS_DB_NAME": "${{ MYSQLDATABASE }}"
+      }
+    },
+    {
+      "name": "phpmyadmin",
+      "image": "phpmyadmin/phpmyadmin:latest",
+      "envs": {
+        "PMA_HOST": "${{ MYSQLHOST }}",
+        "PMA_PORT": "${{ MYSQLPORT }}",
+        "PMA_USER": "${{ MYSQLUSER }}",
+        "PMA_PASSWORD": "${{ MYSQLPASSWORD }}"
+      }
+    }
+  ]
+}
