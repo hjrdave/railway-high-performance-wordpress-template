@@ -5,8 +5,8 @@
       "source": {
         "image": "wordpress:6-php8.2-apache"
       },
-      "buildCommand": null, // Disable Nixpacks build
-      "startCommand": "apache2-foreground", // Explicit start command
+      "buildCommand": null, 
+      "startCommand": "apache2-foreground",
       "variables": {
         "WORDPRESS_DB_HOST": "${{MySQL.RAILWAY_PRIVATE_DOMAIN}}:3306",
         "WORDPRESS_DB_USER": "wordpress",
