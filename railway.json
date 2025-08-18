@@ -5,6 +5,8 @@
       "source": {
         "image": "wordpress:6-php8.2-apache"
       },
+      "buildCommand": null, // Disable Nixpacks build
+      "startCommand": "apache2-foreground", // Explicit start command
       "variables": {
         "WORDPRESS_DB_HOST": "${{MySQL.RAILWAY_PRIVATE_DOMAIN}}:3306",
         "WORDPRESS_DB_USER": "wordpress",
@@ -75,7 +77,7 @@
       "default": "${{secret(32)}}"
     },
     "MYSQL_PASSWORD": {
-      "description": "Password for WordPress MySQL user", 
+      "description": "Password for WordPress MySQL user",
       "default": "${{secret(24)}}"
     },
     "REDIS_PASSWORD": {
